@@ -1,5 +1,8 @@
 import getpass
 import os
+import json
+import datetime
+from pathlib import Path
 from dotenv import load_dotenv
 from config_simulate_conversation import (
     SYSTEM_PROMPT,
@@ -8,6 +11,7 @@ from config_simulate_conversation import (
     SIMULATED_USER_MODEL,
     MAX_MESSAGES,
 )
+from utils import save_conversation_to_file
 
 load_dotenv()
 
@@ -138,6 +142,9 @@ graph_builder.add_conditional_edges(
 graph_builder.add_edge(START, "chat_bot")
 simulation = graph_builder.compile()
 
+# Store the conversation for saving to file
+conversation_history = []
+
 for chunk in simulation.stream({"messages": []}):
     # Print out all events aside from the final end chunk
     if END not in chunk:
@@ -145,4 +152,52 @@ for chunk in simulation.stream({"messages": []}):
         for node, data in chunk.items():
             for message in data["messages"]:
                 print(f"{node}: {message.content}")
+                # Store the message in conversation history
+                conversation_history.append({
+                    "role": node,
+                    "content": message.content
+                })
         print("----")
+    else:
+        # Conversation has ended, save to file
+        config_data = {
+            "system_prompt": SYSTEM_PROMPT,
+            "simulated_user_prompt": SIMULATED_USER_PROMPT,
+            "system_model": SYSTEM_MODEL,
+            "simulated_user_model": SIMULATED_USER_MODEL,
+            "max_messages": MAX_MESSAGES
+        }
+        
+        # Create the data structure to save
+        conversation_data = {
+            "config": config_data,
+            "conversation": conversation_history
+        }
+        
+        # Save the conversation to a file
+        try:
+            save_conversation_to_file(conversation_data)
+        except Exception as e:
+            print(f"Error saving conversation: {str(e)}")
+
+# Ensure conversation is saved even if END block is not executed
+if conversation_history:
+    config_data = {
+        "system_prompt": SYSTEM_PROMPT,
+        "simulated_user_prompt": SIMULATED_USER_PROMPT,
+        "system_model": SYSTEM_MODEL,
+        "simulated_user_model": SIMULATED_USER_MODEL,
+        "max_messages": MAX_MESSAGES
+    }
+    
+    # Create the data structure to save
+    conversation_data = {
+        "config": config_data,
+        "conversation": conversation_history
+    }
+    
+    # Save the conversation to a file
+    try:
+        save_conversation_to_file(conversation_data)
+    except Exception as e:
+        print(f"Error saving conversation at the end of the script: {str(e)}")
