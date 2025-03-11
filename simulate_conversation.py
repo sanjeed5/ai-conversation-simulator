@@ -2,6 +2,7 @@ import getpass
 import os
 import json
 import datetime
+import uuid
 from pathlib import Path
 from dotenv import load_dotenv
 from config_simulate_conversation import (
@@ -13,8 +14,14 @@ from config_simulate_conversation import (
 )
 from utils import save_conversation_to_file
 
+# Import LangSmith thread functionality
+from langsmith import Client
+import os
+
 load_dotenv()
 
+# Initialize LangSmith client
+client = Client()
 
 def _set_if_undefined(var: str):
     if not os.environ.get(var):
@@ -22,6 +29,12 @@ def _set_if_undefined(var: str):
 
 
 _set_if_undefined("OPENAI_API_KEY")
+_set_if_undefined("LANGSMITH_API_KEY")
+_set_if_undefined("LANGSMITH_PROJECT")
+
+# Ensure LangSmith tracing is enabled
+if not os.environ.get("LANGSMITH_TRACING"):
+    os.environ["LANGSMITH_TRACING"] = "true"
 
 from typing import List
 
@@ -35,8 +48,15 @@ def my_chat_bot(messages: List[dict]) -> dict:
         "content": SYSTEM_PROMPT,
     }
     messages = [system_message] + messages
+    
+    # Get the thread ID from environment
+    thread_id = os.environ.get("LANGSMITH_SESSION_ID", "")
+    
+    # Create completion with metadata for LangSmith
     completion = openai.chat.completions.create(
-        messages=messages, model=SYSTEM_MODEL
+        messages=messages, 
+        model=SYSTEM_MODEL,
+        extra_headers={"X-LangSmith-Session-Id": thread_id} if thread_id else {}
     )
     return completion.choices[0].message.model_dump()
 
@@ -98,8 +118,11 @@ def simulated_user_node(state):
     messages = state["messages"]
     # Swap roles of messages
     new_messages = _swap_roles(messages)
-    # Call the simulated user
-    response = simulated_user.invoke({"messages": new_messages})
+    # Call the simulated user with thread metadata
+    response = simulated_user.invoke(
+        {"messages": new_messages},
+        config={"metadata": {"session_id": os.environ.get("LANGSMITH_SESSION_ID")}}
+    )
     # This response is an AI message - we need to flip this to be a human message
     return {"messages": [HumanMessage(content=response.content)]}
 
@@ -142,6 +165,13 @@ graph_builder.add_conditional_edges(
 graph_builder.add_edge(START, "chat_bot")
 simulation = graph_builder.compile()
 
+# Create a thread for this conversation
+thread_id = str(uuid.uuid4())
+print(f"Created thread with ID: {thread_id}")
+
+# Set the thread ID in the environment for LangSmith to use
+os.environ["LANGSMITH_SESSION_ID"] = thread_id
+
 # Store the conversation for saving to file
 conversation_history = []
 
@@ -165,13 +195,15 @@ for chunk in simulation.stream({"messages": []}):
             "simulated_user_prompt": SIMULATED_USER_PROMPT,
             "system_model": SYSTEM_MODEL,
             "simulated_user_model": SIMULATED_USER_MODEL,
-            "max_messages": MAX_MESSAGES
+            "max_messages": MAX_MESSAGES,
+            "thread_id": thread_id
         }
         
         # Create the data structure to save
         conversation_data = {
             "config": config_data,
-            "conversation": conversation_history
+            "conversation": conversation_history,
+            "thread_id": thread_id
         }
         
         # Save the conversation to a file
@@ -187,13 +219,15 @@ if conversation_history:
         "simulated_user_prompt": SIMULATED_USER_PROMPT,
         "system_model": SYSTEM_MODEL,
         "simulated_user_model": SIMULATED_USER_MODEL,
-        "max_messages": MAX_MESSAGES
+        "max_messages": MAX_MESSAGES,
+        "thread_id": thread_id
     }
     
     # Create the data structure to save
     conversation_data = {
         "config": config_data,
-        "conversation": conversation_history
+        "conversation": conversation_history,
+        "thread_id": thread_id
     }
     
     # Save the conversation to a file
