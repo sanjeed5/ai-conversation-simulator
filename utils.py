@@ -15,13 +15,14 @@ def save_conversation_to_file(conversation_data):
     runs_dir = Path("runs")
     runs_dir.mkdir(exist_ok=True)
     
-    # Generate a unique filename based on timestamp
+    # Generate a unique filename based on timestamp and thread ID
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"conversation_run_{timestamp}.json"
+    thread_id = conversation_data.get("thread_id", "no_thread")
+    filename = f"conversation_run_{timestamp}_thread_{thread_id}.json"
     filepath = runs_dir / filename
     
     # Save the data to the file
     with open(filepath, "w") as f:
         json.dump(conversation_data, f, indent=2)
     
-    print(f"Conversation saved to {filepath}") 
+    print(f"Conversation saved to {filepath} with thread ID: {thread_id}") 
