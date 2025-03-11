@@ -68,7 +68,7 @@ from langchain_openai import ChatOpenAI
 
 system_prompt_template = """{instructions}
 
-When you are finished with the conversation, respond with a single word 'FINISHED'"""
+When you are finished with your inital objective, respond with a single word 'FINISHED' and nothing else to end the chat."""
 
 prompt = ChatPromptTemplate.from_messages(
     [
@@ -130,7 +130,7 @@ def should_continue(state):
     messages = state["messages"]
     if len(messages) > MAX_MESSAGES:
         return "end"
-    elif messages[-1].content == "FINISHED":
+    elif "FINISHED" in messages[-1].content:
         return "end"
     else:
         return "continue"
