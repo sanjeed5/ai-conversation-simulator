@@ -8,20 +8,8 @@ This project allows you to:
 - Test AI assistant behavior with a simulated user
 - Configure both the AI assistant and simulated user personas
 - Run automated conversations to evaluate AI performance
-- Set conversation parameters like maximum message count
+- Track conversations with LangSmith threads for observability
 - Save conversation history to JSON files for analysis and review
-
-## How It Works
-
-The simulator uses LangGraph to create a conversation flow between:
-1. Your AI assistant (configurable system prompt and model)
-2. A simulated user (configurable persona and model)
-
-The conversation continues until either:
-- The maximum number of messages is reached
-- The simulated user responds with "FINISHED"
-
-All conversations are automatically saved to the `runs` directory with timestamps for easy reference and analysis.
 
 ## Getting Started
 
@@ -29,6 +17,7 @@ All conversations are automatically saved to the `runs` directory with timestamp
 
 - Python 3.8+
 - OpenAI API key
+- LangSmith API key (optional, for thread tracking)
 
 ### Installation
 
@@ -62,43 +51,68 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. Set up your OpenAI API key
-```bash
-# Either set it in your environment
-export OPENAI_API_KEY=your-api-key
-
-# Or create a .env file
-echo "OPENAI_API_KEY=your-api-key" > .env
+3. Create a `.env` file with your API keys
+```
+OPENAI_API_KEY=your_openai_api_key
+# Optional: For LangSmith thread tracking
+LANGSMITH_API_KEY=your_langsmith_api_key
+LANGSMITH_PROJECT=your_langsmith_project_name
+LANGSMITH_TRACING=true
 ```
 
-### Configuration
+## Usage
 
-Edit `config_simulate_conversation.py` to customize:
-- `SYSTEM_PROMPT`: The system prompt for your AI assistant
-- `SYSTEM_MODEL`: The OpenAI model for your AI assistant (default: gpt-4o-mini)
-- `SIMULATED_USER_PROMPT`: The persona for the simulated user
-- `SIMULATED_USER_MODEL`: The OpenAI model for the simulated user (default: gpt-4o-mini)
-- `MAX_MESSAGES`: Maximum number of messages before ending the conversation
-
-### Running a Simulation
+Run a simulated conversation:
 
 ```bash
-uv run simulate_conversation.py
-# or
 python simulate_conversation.py
 ```
 
-## Conversation Storage
+The simulation will:
+1. Create a conversation between your AI assistant and a simulated user
+2. Continue until the maximum message count or until the user says "FINISHED"
+3. Save the conversation to a file in the `runs` directory
+4. Create a thread in LangSmith for tracking and analysis
 
-All conversations are automatically saved to JSON files in the `runs` directory. Each file includes:
-- Complete conversation history with timestamps
+## Configuration
+
+Modify `config_simulate_conversation.py` to customize:
+
+- `SYSTEM_PROMPT`: The system prompt for your AI assistant
+- `SYSTEM_MODEL`: The OpenAI model for your AI assistant
+- `SIMULATED_USER_PROMPT`: The persona for the simulated user
+- `SIMULATED_USER_MODEL`: The OpenAI model for the simulated user
+- `MAX_MESSAGES`: Maximum number of messages before ending the conversation
+
+## Features
+
+### Conversation Simulation
+
+The simulator uses LangGraph to create a conversation flow between:
+1. Your AI assistant (configurable system prompt and model)
+2. A simulated user (configurable persona and model)
+
+### Conversation Storage
+
+All conversations are saved to JSON files in the `runs` directory with:
+- Complete conversation history
 - Configuration settings used for the simulation
 - Role information (AI assistant vs simulated user)
+- Timestamp and unique identifiers
 
-This makes it easy to:
-- Review conversation quality and AI performance
-- Compare different system prompts and configurations
-- Build datasets for further analysis or training
+### Thread Tracking with LangSmith
+
+When LangSmith integration is enabled:
+- Each conversation is tracked as a thread in LangSmith
+- Thread IDs are included in saved files for reference
+- You can view detailed conversation analytics in the LangSmith UI
+
+#### Viewing Threads in LangSmith
+
+1. Go to [LangSmith](https://smith.langchain.com/)
+2. Navigate to your project
+3. Click on the "Threads" tab to see all your conversation threads
+4. Click on a thread to see the detailed conversation history
 
 ## Customization
 
