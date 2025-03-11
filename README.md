@@ -9,6 +9,7 @@ This project allows you to:
 - Configure both the AI assistant and simulated user personas
 - Run automated conversations to evaluate AI performance
 - Set conversation parameters like maximum message count
+- Save conversation history to JSON files for analysis and review
 
 ## How It Works
 
@@ -19,6 +20,8 @@ The simulator uses LangGraph to create a conversation flow between:
 The conversation continues until either:
 - The maximum number of messages is reached
 - The simulated user responds with "FINISHED"
+
+All conversations are automatically saved to the `runs` directory with timestamps for easy reference and analysis.
 
 ## Getting Started
 
@@ -36,7 +39,26 @@ cd ai-conversation-simulator
 ```
 
 2. Install dependencies
+
+Using uv (recommended for faster installation):
 ```bash
+# Install uv if you don't have it - https://docs.astral.sh/uv/getting-started/installation/
+
+# Create and activate virtual environment
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+uv pip install -r requirements.txt
+```
+
+Using pip (alternative):
+```bash
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
@@ -61,8 +83,22 @@ Edit `config_simulate_conversation.py` to customize:
 ### Running a Simulation
 
 ```bash
+uv run simulate_conversation.py
+# or
 python simulate_conversation.py
 ```
+
+## Conversation Storage
+
+All conversations are automatically saved to JSON files in the `runs` directory. Each file includes:
+- Complete conversation history with timestamps
+- Configuration settings used for the simulation
+- Role information (AI assistant vs simulated user)
+
+This makes it easy to:
+- Review conversation quality and AI performance
+- Compare different system prompts and configurations
+- Build datasets for further analysis or training
 
 ## Customization
 
